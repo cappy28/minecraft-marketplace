@@ -1,5 +1,5 @@
 /* ===========================
-   CRAFTMARKET — script.js (Trade System)
+   CRAFTMARKET — script.js (Shop / Multi-Trade System)
    =========================== */
 
 'use strict';
@@ -39,59 +39,45 @@ const DEFAULT_WEBHOOK = 'https://discord.com/api/webhooks/1510191804132229181/4N
 // ───────────────────────────────────────────
 // STATE
 // ───────────────────────────────────────────
-let listings = [];
+let listings = [];          // toutes les annonces (shops)
 let activeCategory = 'all';
 let searchQuery = '';
-let selectedItem = null;
-let selectedExchange = null;
 let toastTimer = null;
+let editingId = null;       // id du shop en cours d'édition (null = nouvelle boutique)
+
+// trades en cours dans le modal
+// chaque entry: { offerItem, offerQty, exchangeItem, exchangeQty, note }
+let pendingTrades = [];
 
 // ───────────────────────────────────────────
 // DOM REFS
 // ───────────────────────────────────────────
-const grid            = document.getElementById('catalogue-grid');
-const emptyState      = document.getElementById('empty-state');
-const listingCount    = document.getElementById('listing-count');
-const openModalBtn    = document.getElementById('open-modal-btn');
-const closeModalBtn   = document.getElementById('close-modal-btn');
-const cancelBtn       = document.getElementById('cancel-btn');
-const modalOverlay    = document.getElementById('modal-overlay');
-const listingForm     = document.getElementById('listing-form');
-const searchInput     = document.getElementById('search-input');
-const filterTabs      = document.getElementById('filter-tabs');
-
-// Item offert
-const itemSearchEl    = document.getElementById('item-search');
-const itemDropdown    = document.getElementById('item-dropdown');
-const selectedPreview = document.getElementById('selected-item-preview');
-const previewImg      = document.getElementById('preview-img');
-const previewName     = document.getElementById('preview-name');
-const clearItemBtn    = document.getElementById('clear-item-btn');
-const selectedItemId  = document.getElementById('selected-item-id');
-const qtyOfferInput   = document.getElementById('qty-offer-input');
-
-// Item échange
-const exchangeSearchEl    = document.getElementById('exchange-search');
-const exchangeDropdown    = document.getElementById('exchange-dropdown');
-const selectedExchangePreview = document.getElementById('selected-exchange-preview');
-const exchangePreviewImg  = document.getElementById('exchange-preview-img');
-const exchangePreviewName = document.getElementById('exchange-preview-name');
-const clearExchangeBtn    = document.getElementById('clear-exchange-btn');
-const selectedExchangeId  = document.getElementById('selected-exchange-id');
-const qtyExchangeInput    = document.getElementById('qty-exchange-input');
-
-const sellerInput   = document.getElementById('seller-input');
-const descInput     = document.getElementById('desc-input');
-const formError     = document.getElementById('form-error');
-const toastEl       = document.getElementById('toast');
-const submitBtn     = document.getElementById('submit-btn');
+const grid           = document.getElementById('catalogue-grid');
+const emptyState     = document.getElementById('empty-state');
+const listingCount   = document.getElementById('listing-count');
+const openModalBtn   = document.getElementById('open-modal-btn');
+const closeModalBtn  = document.getElementById('close-modal-btn');
+const cancelBtn      = document.getElementById('cancel-btn');
+const modalOverlay   = document.getElementById('modal-overlay');
+const modalTitle     = document.getElementById('modal-title');
+const sellerInput    = document.getElementById('seller-input');
+const shopDescInput  = document.getElementById('shop-desc-input');
+const formError      = document.getElementById('form-error');
+const toastEl        = document.getElementById('toast');
+const submitBtn      = document.getElementById('submit-btn');
+const addTradeBtn    = document.getElementById('add-trade-btn');
+const tradesList     = document.getElementById('trades-list');
+const tradeTemplate  = document.getElementById('trade-row-template');
+const tradesCountBadge = document.getElementById('trades-count-badge');
+const searchInput    = document.getElementById('search-input');
+const filterTabs     = document.getElementById('filter-tabs');
 
 // ───────────────────────────────────────────
 // LOCALSTORAGE
 // ───────────────────────────────────────────
 function loadListings() {
   try {
-    const raw = localStorage.getItem('craftmarket_listings');
+    const raw = localStorage.getItem('craftmarket_listings_v2');
     listings = raw ? JSON.parse(raw) : getDefaultListings();
   } catch {
     listings = getDefaultListings();
@@ -99,58 +85,62 @@ function loadListings() {
 }
 
 function saveListings() {
-  localStorage.setItem('craftmarket_listings', JSON.stringify(listings));
+  localStorage.setItem('craftmarket_listings_v2', JSON.stringify(listings));
 }
 
 function getDefaultListings() {
   return [
     {
       id: genId(),
-      itemId: 'diamond',
-      itemName: 'Diamond',
-      itemImage: 'https://www.mcworldtools.com/textures/rendered/diamond.png',
-      itemCategory: 'resources',
-      qtyOffer: 1,
-      exchangeId: 'dirt',
-      exchangeName: 'Dirt',
-      exchangeImage: 'https://www.mcworldtools.com/textures/rendered/dirt.png',
-      exchangeCategory: 'blocks',
-      qtyExchange: 32,
       seller: 'Notch',
-      description: 'Diamants naturels, trouvés en Y=-59.',
+      shopDesc: 'Spécialiste ressources et minerais rares',
+      trades: [
+        {
+          itemId: 'diamond', itemName: 'Diamond',
+          itemImage: 'https://www.mcworldtools.com/textures/rendered/diamond.png',
+          itemCategory: 'resources', qtyOffer: 1,
+          exchangeId: 'dirt', exchangeName: 'Dirt',
+          exchangeImage: 'https://www.mcworldtools.com/textures/rendered/dirt.png',
+          exchangeCategory: 'blocks', qtyExchange: 32,
+          note: 'Diamants naturels, trouvés en Y=-59.'
+        },
+        {
+          itemId: 'emerald', itemName: 'Emerald',
+          itemImage: 'https://www.mcworldtools.com/textures/rendered/emerald.png',
+          itemCategory: 'resources', qtyOffer: 5,
+          exchangeId: 'gold_ingot', exchangeName: 'Gold Ingot',
+          exchangeImage: 'https://www.mcworldtools.com/textures/rendered/gold_ingot.png',
+          exchangeCategory: 'resources', qtyExchange: 16,
+          note: ''
+        }
+      ],
       date: new Date(Date.now() - 86400000 * 2).toISOString()
     },
     {
       id: genId(),
-      itemId: 'netherite_ingot',
-      itemName: 'Netherite Ingot',
-      itemImage: 'https://www.mcworldtools.com/textures/rendered/netherite_ingot.png',
-      itemCategory: 'resources',
-      qtyOffer: 1,
-      exchangeId: 'diamond',
-      exchangeName: 'Diamond',
-      exchangeImage: 'https://www.mcworldtools.com/textures/rendered/diamond.png',
-      exchangeCategory: 'resources',
-      qtyExchange: 4,
       seller: 'Herobrine',
-      description: 'Prix négociable pour gros volumes.',
+      shopDesc: 'Équipement haut de gamme – prix négociables',
+      trades: [
+        {
+          itemId: 'netherite_ingot', itemName: 'Netherite Ingot',
+          itemImage: 'https://www.mcworldtools.com/textures/rendered/netherite_ingot.png',
+          itemCategory: 'resources', qtyOffer: 1,
+          exchangeId: 'diamond', exchangeName: 'Diamond',
+          exchangeImage: 'https://www.mcworldtools.com/textures/rendered/diamond.png',
+          exchangeCategory: 'resources', qtyExchange: 4,
+          note: 'Prix négociable pour gros volumes.'
+        },
+        {
+          itemId: 'elytra', itemName: 'Elytra',
+          itemImage: 'https://www.mcworldtools.com/textures/rendered/elytra.png',
+          itemCategory: 'armor', qtyOffer: 1,
+          exchangeId: 'emerald_block', exchangeName: 'Emerald Block',
+          exchangeImage: 'https://www.mcworldtools.com/textures/rendered/emerald_block.png',
+          exchangeCategory: 'blocks', qtyExchange: 8,
+          note: 'Mending + Unbreaking III.'
+        }
+      ],
       date: new Date(Date.now() - 86400000).toISOString()
-    },
-    {
-      id: genId(),
-      itemId: 'elytra',
-      itemName: 'Elytra',
-      itemImage: 'https://www.mcworldtools.com/textures/rendered/elytra.png',
-      itemCategory: 'armor',
-      qtyOffer: 1,
-      exchangeId: 'emerald_block',
-      exchangeName: 'Emerald Block',
-      exchangeImage: 'https://www.mcworldtools.com/textures/rendered/emerald_block.png',
-      exchangeCategory: 'blocks',
-      qtyExchange: 8,
-      seller: 'Steve64',
-      description: 'Mending + Unbreaking III. Une seule dispo.',
-      date: new Date().toISOString()
     }
   ];
 }
@@ -184,6 +174,7 @@ function showToast(msg, isError = false) {
 function showError(msg) {
   formError.textContent = msg;
   formError.classList.remove('hidden');
+  formError.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function clearError() {
@@ -202,14 +193,18 @@ function escapeHtml(str) {
 // RENDER CATALOGUE
 // ───────────────────────────────────────────
 function getFilteredListings() {
-  return listings.filter(l => {
-    const matchCat = activeCategory === 'all' || l.itemCategory === activeCategory;
+  return listings.filter(shop => {
+    const matchCat = activeCategory === 'all' ||
+      shop.trades.some(t => t.itemCategory === activeCategory || t.exchangeCategory === activeCategory);
     const q = searchQuery.toLowerCase();
     const matchSearch = !q ||
-      l.itemName.toLowerCase().includes(q) ||
-      l.exchangeName.toLowerCase().includes(q) ||
-      l.seller.toLowerCase().includes(q) ||
-      (l.description && l.description.toLowerCase().includes(q));
+      shop.seller.toLowerCase().includes(q) ||
+      (shop.shopDesc && shop.shopDesc.toLowerCase().includes(q)) ||
+      shop.trades.some(t =>
+        t.itemName.toLowerCase().includes(q) ||
+        t.exchangeName.toLowerCase().includes(q) ||
+        (t.note && t.note.toLowerCase().includes(q))
+      );
     return matchCat && matchSearch;
   });
 }
@@ -222,81 +217,123 @@ function renderCatalogue() {
     emptyState.style.display = 'block';
   } else {
     emptyState.style.display = 'none';
-    filtered.forEach((listing, i) => {
-      const card = createCard(listing, i);
+    filtered.forEach((shop, i) => {
+      const card = createShopCard(shop, i);
       grid.appendChild(card);
     });
   }
 
-  listingCount.textContent = `${listings.length} annonce${listings.length !== 1 ? 's' : ''}`;
+  const total = listings.reduce((acc, s) => acc + s.trades.length, 0);
+  listingCount.textContent = `${listings.length} boutique${listings.length !== 1 ? 's' : ''} · ${total} trade${total !== 1 ? 's' : ''}`;
 }
 
-function createCard(listing, index) {
-  const isRare = RARE_ITEMS.has(listing.itemId) || RARE_ITEMS.has(listing.exchangeId);
+function createShopCard(shop, index) {
+  const hasRare = shop.trades.some(t => RARE_ITEMS.has(t.itemId) || RARE_ITEMS.has(t.exchangeId));
   const card = document.createElement('div');
-  card.className = `item-card${isRare ? ' card-rare' : ''}`;
+  card.className = `shop-card${hasRare ? ' card-rare' : ''}`;
   card.style.animationDelay = `${index * 0.04}s`;
 
-  const fallbackOffer    = `https://ui-avatars.com/api/?name=${encodeURIComponent(listing.itemName)}&background=1a2212&color=7ec84a&size=72`;
-  const fallbackExchange = `https://ui-avatars.com/api/?name=${encodeURIComponent(listing.exchangeName)}&background=1a2212&color=e8a020&size=72`;
-
-  card.innerHTML = `
-    <div class="card-img-wrap">
-      <span class="card-category-badge">${CAT_LABELS[listing.itemCategory] || listing.itemCategory}</span>
-      <div class="card-trade-display">
+  const tradesHtml = shop.trades.map(t => {
+    const fallbackOffer    = `https://ui-avatars.com/api/?name=${encodeURIComponent(t.itemName)}&background=1a2212&color=7ec84a&size=48`;
+    const fallbackExchange = `https://ui-avatars.com/api/?name=${encodeURIComponent(t.exchangeName)}&background=1a2212&color=e8a020&size=48`;
+    return `
+      <div class="shop-trade-row">
         <div class="trade-side trade-offer">
-          <img class="card-item-img" src="${listing.itemImage}" alt="${listing.itemName}" onerror="this.src='${fallbackOffer}'" />
-          <span class="trade-qty">×${listing.qtyOffer}</span>
-          <span class="trade-name">${escapeHtml(listing.itemName)}</span>
+          <img class="card-item-img-sm" src="${t.itemImage}" alt="${t.itemName}" onerror="this.src='${fallbackOffer}'" />
+          <span class="trade-qty">×${t.qtyOffer}</span>
+          <span class="trade-name">${escapeHtml(t.itemName)}</span>
         </div>
         <div class="trade-arrow">⇄</div>
         <div class="trade-side trade-exchange">
-          <img class="card-item-img" src="${listing.exchangeImage}" alt="${listing.exchangeName}" onerror="this.src='${fallbackExchange}'" />
-          <span class="trade-qty">×${listing.qtyExchange}</span>
-          <span class="trade-name">${escapeHtml(listing.exchangeName)}</span>
+          <img class="card-item-img-sm" src="${t.exchangeImage}" alt="${t.exchangeName}" onerror="this.src='${fallbackExchange}'" />
+          <span class="trade-qty">×${t.qtyExchange}</span>
+          <span class="trade-name">${escapeHtml(t.exchangeName)}</span>
         </div>
+        ${t.note ? `<span class="trade-card-note" title="${escapeHtml(t.note)}">💬 ${escapeHtml(t.note)}</span>` : ''}
       </div>
+    `;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="shop-card-header">
+      <div class="shop-seller-info">
+        <span class="shop-seller-name">👤 ${escapeHtml(shop.seller)}</span>
+        ${shop.shopDesc ? `<span class="shop-seller-desc">${escapeHtml(shop.shopDesc)}</span>` : ''}
+      </div>
+      <span class="shop-trade-count">${shop.trades.length} trade${shop.trades.length !== 1 ? 's' : ''}</span>
     </div>
-    <div class="card-body">
-      <div class="card-seller">👤 ${escapeHtml(listing.seller)}</div>
-      ${listing.description ? `<div class="card-desc">${escapeHtml(listing.description)}</div>` : ''}
+    <div class="shop-trades-body">
+      ${tradesHtml}
     </div>
     <div class="card-footer">
-      <span class="card-date">${timeAgo(listing.date)}</span>
-      <button class="card-del-btn" data-id="${listing.id}" title="Supprimer">🗑 Supprimer</button>
+      <span class="card-date">${timeAgo(shop.date)}</span>
+      <div class="card-actions">
+        <button class="card-edit-btn" data-id="${shop.id}" title="Modifier">✏ Modifier</button>
+        <button class="card-del-btn" data-id="${shop.id}" title="Supprimer">🗑 Supprimer</button>
+      </div>
     </div>
   `;
 
-  card.querySelector('.card-del-btn').addEventListener('click', () => deleteListing(listing.id));
+  card.querySelector('.card-del-btn').addEventListener('click', () => deleteShop(shop.id));
+  card.querySelector('.card-edit-btn').addEventListener('click', () => openEditModal(shop.id));
   return card;
 }
 
 // ───────────────────────────────────────────
 // DELETE
 // ───────────────────────────────────────────
-function deleteListing(id) {
-  listings = listings.filter(l => l.id !== id);
+function deleteShop(id) {
+  listings = listings.filter(s => s.id !== id);
   saveListings();
   renderCatalogue();
-  showToast('Annonce supprimée.');
+  showToast('Boutique supprimée.');
 }
 
 // ───────────────────────────────────────────
 // MODAL
 // ───────────────────────────────────────────
-function openModal() {
+function openModal(shopToEdit = null) {
+  editingId = shopToEdit ? shopToEdit.id : null;
+  modalTitle.textContent = shopToEdit ? '✏ Modifier la boutique' : '🏪 Nouvelle Boutique';
+  submitBtn.textContent = shopToEdit ? '💾 Enregistrer les modifications' : '📢 Publier la boutique';
+
+  sellerInput.value = shopToEdit ? shopToEdit.seller : '';
+  shopDescInput.value = shopToEdit ? (shopToEdit.shopDesc || '') : '';
+  tradesList.innerHTML = '';
+  pendingTrades = [];
+  clearError();
+
+  if (shopToEdit && shopToEdit.trades.length > 0) {
+    shopToEdit.trades.forEach(t => addTradeRow({
+      offerItem:    { id: t.itemId, name: t.itemName, image: t.itemImage, category: t.itemCategory },
+      offerQty:     t.qtyOffer,
+      exchangeItem: { id: t.exchangeId, name: t.exchangeName, image: t.exchangeImage, category: t.exchangeCategory },
+      exchangeQty:  t.qtyExchange,
+      note:         t.note || ''
+    }));
+  } else {
+    addTradeRow(); // un trade vide par défaut
+  }
+
   modalOverlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-  itemSearchEl.focus();
+  sellerInput.focus();
+}
+
+function openEditModal(id) {
+  const shop = listings.find(s => s.id === id);
+  if (shop) openModal(shop);
 }
 
 function closeModal() {
   modalOverlay.classList.add('hidden');
   document.body.style.overflow = '';
-  resetForm();
+  pendingTrades = [];
+  tradesList.innerHTML = '';
+  editingId = null;
 }
 
-openModalBtn.addEventListener('click', openModal);
+openModalBtn.addEventListener('click', () => openModal());
 closeModalBtn.addEventListener('click', closeModal);
 cancelBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
@@ -305,191 +342,304 @@ document.addEventListener('keydown', e => {
 });
 
 // ───────────────────────────────────────────
-// ITEM SELECTOR — OFFERT
+// TRADES DYNAMIQUES
 // ───────────────────────────────────────────
-itemSearchEl.addEventListener('input', () => {
-  const q = itemSearchEl.value.trim().toLowerCase();
-  if (!q) { itemDropdown.classList.add('hidden'); return; }
-  const matches = MINECRAFT_ITEMS.filter(item =>
-    item.name.toLowerCase().includes(q) || item.id.includes(q)
-  ).slice(0, 12);
-  renderDropdown(matches, itemDropdown, selectItem);
-});
+function updateTradesBadge() {
+  const n = pendingTrades.length;
+  tradesCountBadge.textContent = `${n} trade${n !== 1 ? 's' : ''}`;
+}
 
-itemSearchEl.addEventListener('focus', () => {
-  if (itemSearchEl.value.trim()) itemDropdown.classList.remove('hidden');
-});
+function addTradeRow(prefill = null) {
+  const tradeData = {
+    offerItem: null,
+    offerQty: 1,
+    exchangeItem: null,
+    exchangeQty: 1,
+    note: '',
+    ...(prefill || {})
+  };
 
-document.addEventListener('click', e => {
-  if (!e.target.closest('.item-selector')) {
-    itemDropdown.classList.add('hidden');
-    exchangeDropdown.classList.add('hidden');
+  const idx = pendingTrades.length;
+  pendingTrades.push(tradeData);
+
+  const clone = tradeTemplate.content.cloneNode(true);
+  const row = clone.querySelector('.trade-row');
+  row.dataset.tradeIndex = idx;
+  row.querySelector('.trade-num').textContent = idx + 1;
+
+  // Pré-remplissage si édition
+  if (prefill) {
+    if (prefill.offerItem) {
+      setOfferPreview(row, prefill.offerItem);
+    }
+    if (prefill.exchangeItem) {
+      setExchangePreview(row, prefill.exchangeItem);
+    }
+    row.querySelector('.qty-offer').value = prefill.offerQty || 1;
+    row.querySelector('.qty-exchange').value = prefill.exchangeQty || 1;
+    row.querySelector('.trade-note').value = prefill.note || '';
   }
-});
 
-function selectItem(item) {
-  selectedItem = item;
-  selectedItemId.value = item.id;
-  previewImg.src = item.image;
-  previewImg.alt = item.name;
-  previewName.textContent = item.name;
-  selectedPreview.classList.remove('hidden');
-  itemSearchEl.value = '';
-  itemDropdown.classList.add('hidden');
-  clearError();
+  // Supprimer ce trade
+  row.querySelector('.trade-row-remove').addEventListener('click', () => removeTradeRow(row, idx));
+
+  // Dropdowns offre
+  const offerSearch = row.querySelector('.item-search-offer');
+  const offerDrop   = row.querySelector('.item-dropdown-offer');
+  offerSearch.addEventListener('input', () => handleSearchInput(offerSearch, offerDrop, item => {
+    selectOfferItem(row, idx, item);
+  }));
+  offerSearch.addEventListener('focus', () => {
+    if (offerSearch.value.trim()) offerDrop.classList.remove('hidden');
+  });
+
+  row.querySelector('.clear-offer').addEventListener('click', () => {
+    pendingTrades[idx].offerItem = null;
+    row.querySelector('.offer-preview').classList.add('hidden');
+    offerSearch.value = '';
+    offerSearch.focus();
+  });
+
+  // Dropdowns échange
+  const exchSearch = row.querySelector('.item-search-exchange');
+  const exchDrop   = row.querySelector('.item-dropdown-exchange');
+  exchSearch.addEventListener('input', () => handleSearchInput(exchSearch, exchDrop, item => {
+    selectExchangeItem(row, idx, item);
+  }));
+  exchSearch.addEventListener('focus', () => {
+    if (exchSearch.value.trim()) exchDrop.classList.remove('hidden');
+  });
+
+  row.querySelector('.clear-exchange').addEventListener('click', () => {
+    pendingTrades[idx].exchangeItem = null;
+    row.querySelector('.exchange-preview').classList.add('hidden');
+    exchSearch.value = '';
+    exchSearch.focus();
+  });
+
+  // Sync quantities & notes
+  row.querySelector('.qty-offer').addEventListener('input', e => {
+    pendingTrades[idx].offerQty = parseInt(e.target.value, 10) || 1;
+  });
+  row.querySelector('.qty-exchange').addEventListener('input', e => {
+    pendingTrades[idx].exchangeQty = parseInt(e.target.value, 10) || 1;
+  });
+  row.querySelector('.trade-note').addEventListener('input', e => {
+    pendingTrades[idx].note = e.target.value.trim();
+  });
+
+  tradesList.appendChild(row);
+  updateTradesBadge();
+  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-clearItemBtn.addEventListener('click', () => {
-  selectedItem = null;
-  selectedItemId.value = '';
-  selectedPreview.classList.add('hidden');
-  itemSearchEl.value = '';
-  itemSearchEl.focus();
-});
+function removeTradeRow(row, idx) {
+  pendingTrades.splice(idx, 1);
+  row.remove();
+  // Re-numéroter les rows restants
+  tradesList.querySelectorAll('.trade-row').forEach((r, i) => {
+    r.dataset.tradeIndex = i;
+    const numEl = r.querySelector('.trade-num');
+    if (numEl) numEl.textContent = i + 1;
+  });
+  updateTradesBadge();
+}
+
+addTradeBtn.addEventListener('click', () => addTradeRow());
 
 // ───────────────────────────────────────────
-// ITEM SELECTOR — ÉCHANGE
+// ITEM SEARCH HELPERS
 // ───────────────────────────────────────────
-exchangeSearchEl.addEventListener('input', () => {
-  const q = exchangeSearchEl.value.trim().toLowerCase();
-  if (!q) { exchangeDropdown.classList.add('hidden'); return; }
+// Convertit un id Minecraft en nom anglais lisible : "netherite_ingot" → "Netherite Ingot"
+function idToEnglish(id) {
+  return id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+function handleSearchInput(inputEl, dropdownEl, onSelect) {
+  const q = inputEl.value.trim().toLowerCase();
+  if (!q) { dropdownEl.classList.add('hidden'); return; }
   const matches = MINECRAFT_ITEMS.filter(item =>
-    item.name.toLowerCase().includes(q) || item.id.includes(q)
+    item.name.toLowerCase().includes(q) ||        // recherche en français
+    idToEnglish(item.id).toLowerCase().includes(q) // recherche en anglais
   ).slice(0, 12);
-  renderDropdown(matches, exchangeDropdown, selectExchange);
-});
-
-exchangeSearchEl.addEventListener('focus', () => {
-  if (exchangeSearchEl.value.trim()) exchangeDropdown.classList.remove('hidden');
-});
-
-function selectExchange(item) {
-  selectedExchange = item;
-  selectedExchangeId.value = item.id;
-  exchangePreviewImg.src = item.image;
-  exchangePreviewImg.alt = item.name;
-  exchangePreviewName.textContent = item.name;
-  selectedExchangePreview.classList.remove('hidden');
-  exchangeSearchEl.value = '';
-  exchangeDropdown.classList.add('hidden');
-  clearError();
+  renderDropdown(matches, dropdownEl, onSelect);
 }
 
-clearExchangeBtn.addEventListener('click', () => {
-  selectedExchange = null;
-  selectedExchangeId.value = '';
-  selectedExchangePreview.classList.add('hidden');
-  exchangeSearchEl.value = '';
-  exchangeSearchEl.focus();
-});
-
-// ───────────────────────────────────────────
-// SHARED DROPDOWN RENDERER
-// ───────────────────────────────────────────
 function renderDropdown(items, dropdownEl, onSelect) {
   dropdownEl.innerHTML = '';
   if (items.length === 0) {
     dropdownEl.innerHTML = '<div class="dropdown-empty">Aucun item trouvé.</div>';
   } else {
     items.forEach(item => {
+      const enName = idToEnglish(item.id);
       const row = document.createElement('div');
       row.className = 'dropdown-item';
       row.innerHTML = `
         <img src="${item.image}" alt="${item.name}" onerror="this.src=''" />
-        <span class="dropdown-item-name">${item.name}</span>
+        <div class="dropdown-item-names">
+          <span class="dropdown-item-name">${item.name}</span>
+          <span class="dropdown-item-en">${enName}</span>
+        </div>
         <span class="dropdown-item-cat">${CAT_LABELS[item.category] || item.category}</span>
       `;
-      row.addEventListener('click', () => onSelect(item));
+      row.addEventListener('click', () => {
+        onSelect(item);
+        dropdownEl.classList.add('hidden');
+      });
       dropdownEl.appendChild(row);
     });
   }
   dropdownEl.classList.remove('hidden');
 }
 
+// Ferme tous les dropdowns sur click extérieur
+document.addEventListener('click', e => {
+  if (!e.target.closest('.item-selector')) {
+    document.querySelectorAll('.item-dropdown').forEach(d => d.classList.add('hidden'));
+  }
+});
+
+function setOfferPreview(row, item) {
+  const preview = row.querySelector('.offer-preview');
+  row.querySelector('.offer-preview-img').src = item.image;
+  row.querySelector('.offer-preview-img').alt = item.name;
+  row.querySelector('.offer-preview-name').textContent = item.name;
+  preview.classList.remove('hidden');
+  row.querySelector('.item-search-offer').value = '';
+}
+
+function setExchangePreview(row, item) {
+  const preview = row.querySelector('.exchange-preview');
+  row.querySelector('.exchange-preview-img').src = item.image;
+  row.querySelector('.exchange-preview-img').alt = item.name;
+  row.querySelector('.exchange-preview-name').textContent = item.name;
+  preview.classList.remove('hidden');
+  row.querySelector('.item-search-exchange').value = '';
+}
+
+function selectOfferItem(row, idx, item) {
+  pendingTrades[idx].offerItem = item;
+  setOfferPreview(row, item);
+  clearError();
+}
+
+function selectExchangeItem(row, idx, item) {
+  pendingTrades[idx].exchangeItem = item;
+  setExchangePreview(row, item);
+  clearError();
+}
+
 // ───────────────────────────────────────────
-// FORM SUBMISSION
+// SUBMIT
 // ───────────────────────────────────────────
-listingForm.addEventListener('submit', async e => {
-  e.preventDefault();
+submitBtn.addEventListener('click', async () => {
   clearError();
 
-  if (!selectedItem) {
-    showError('⚠ Veuillez sélectionner l\'item que vous offrez.');
-    return;
-  }
-  if (!selectedExchange) {
-    showError('⚠ Veuillez sélectionner l\'item demandé en échange.');
-    return;
-  }
-
-  const qtyOffer    = parseInt(qtyOfferInput.value, 10);
-  const qtyExchange = parseInt(qtyExchangeInput.value, 10);
-  const seller      = sellerInput.value.trim();
-  const desc        = descInput.value.trim();
-
-  if (!qtyOffer || qtyOffer < 1 || qtyOffer > 2304) {
-    showError('⚠ La quantité offerte doit être entre 1 et 2304.');
-    return;
-  }
-  if (!qtyExchange || qtyExchange < 1 || qtyExchange > 2304) {
-    showError('⚠ La quantité demandée doit être entre 1 et 2304.');
-    return;
-  }
+  const seller = sellerInput.value.trim();
   if (!seller || seller.length < 2) {
     showError('⚠ Le pseudo vendeur doit faire au moins 2 caractères.');
     return;
   }
 
-  const listing = {
-    id: genId(),
-    itemId: selectedItem.id,
-    itemName: selectedItem.name,
-    itemImage: selectedItem.image,
-    itemCategory: selectedItem.category,
-    qtyOffer,
-    exchangeId: selectedExchange.id,
-    exchangeName: selectedExchange.name,
-    exchangeImage: selectedExchange.image,
-    exchangeCategory: selectedExchange.category,
-    qtyExchange,
-    seller,
-    description: desc,
-    date: new Date().toISOString()
-  };
+  if (pendingTrades.length === 0) {
+    showError('⚠ Ajoutez au moins un trade.');
+    return;
+  }
 
-  listings.unshift(listing);
-  saveListings();
-  renderCatalogue();
+  // Valider chaque trade
+  for (let i = 0; i < pendingTrades.length; i++) {
+    const t = pendingTrades[i];
+    if (!t.offerItem) {
+      showError(`⚠ Trade #${i + 1} : sélectionnez l'item offert.`);
+      return;
+    }
+    if (!t.exchangeItem) {
+      showError(`⚠ Trade #${i + 1} : sélectionnez l'item demandé.`);
+      return;
+    }
+    const qo = parseInt(tradesList.querySelectorAll('.qty-offer')[i].value, 10);
+    const qe = parseInt(tradesList.querySelectorAll('.qty-exchange')[i].value, 10);
+    if (!qo || qo < 1 || qo > 2304) {
+      showError(`⚠ Trade #${i + 1} : quantité offerte invalide (1–2304).`);
+      return;
+    }
+    if (!qe || qe < 1 || qe > 2304) {
+      showError(`⚠ Trade #${i + 1} : quantité demandée invalide (1–2304).`);
+      return;
+    }
+    t.offerQty = qo;
+    t.exchangeQty = qe;
+  }
 
-  submitBtn.disabled = true;
-  submitBtn.textContent = '📡 Envoi Discord...';
-  await sendDiscordWebhook(DEFAULT_WEBHOOK, listing);
-  submitBtn.disabled = false;
-  submitBtn.textContent = "📢 Publier l'annonce";
+  const trades = pendingTrades.map(t => ({
+    itemId:          t.offerItem.id,
+    itemName:        t.offerItem.name,
+    itemImage:       t.offerItem.image,
+    itemCategory:    t.offerItem.category,
+    qtyOffer:        t.offerQty,
+    exchangeId:      t.exchangeItem.id,
+    exchangeName:    t.exchangeItem.name,
+    exchangeImage:   t.exchangeItem.image,
+    exchangeCategory:t.exchangeItem.category,
+    qtyExchange:     t.exchangeQty,
+    note:            t.note || ''
+  }));
 
-  closeModal();
-  showToast(`✅ Annonce publiée !\n${listing.qtyOffer}× ${listing.itemName} ⇄ ${listing.qtyExchange}× ${listing.exchangeName}`);
+  const shopDesc = shopDescInput.value.trim();
+
+  if (editingId) {
+    // ÉDITION
+    const idx = listings.findIndex(s => s.id === editingId);
+    if (idx !== -1) {
+      listings[idx] = { ...listings[idx], seller, shopDesc, trades, date: new Date().toISOString() };
+    }
+    saveListings();
+    renderCatalogue();
+    closeModal();
+    showToast(`✅ Boutique de ${seller} mise à jour ! (${trades.length} trade${trades.length !== 1 ? 's' : ''})`);
+  } else {
+    // CRÉATION
+    const shop = { id: genId(), seller, shopDesc, trades, date: new Date().toISOString() };
+    listings.unshift(shop);
+    saveListings();
+    renderCatalogue();
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = '📡 Envoi Discord...';
+    await sendDiscordWebhook(DEFAULT_WEBHOOK, shop);
+    submitBtn.disabled = false;
+    submitBtn.textContent = '📢 Publier la boutique';
+
+    closeModal();
+    showToast(`✅ Boutique de ${seller} publiée ! (${trades.length} trade${trades.length !== 1 ? 's' : ''})`);
+  }
 });
 
 // ───────────────────────────────────────────
 // DISCORD WEBHOOK
 // ───────────────────────────────────────────
-async function sendDiscordWebhook(webhookUrl, listing) {
+async function sendDiscordWebhook(webhookUrl, shop) {
+  const fields = [];
+  shop.trades.forEach((t, i) => {
+    fields.push({
+      name: `Trade #${i + 1}`,
+      value: `**${t.qtyOffer}× ${t.itemName}** ⇄ **${t.qtyExchange}× ${t.exchangeName}**${t.note ? `\n*${t.note}*` : ''}`,
+      inline: false
+    });
+  });
+  fields.unshift({ name: '👤 Vendeur', value: `\`${shop.seller}\``, inline: true });
+  if (shop.shopDesc) fields.push({ name: '📝 Description', value: shop.shopDesc, inline: false });
+
   const payload = {
     username: 'CraftMarket',
     avatar_url: 'https://minecraft.wiki/images/Grass_Block_JE7_BE6.png',
     embeds: [{
-      title: `🔄 Échange : ${listing.qtyOffer}× ${listing.itemName} ⇄ ${listing.qtyExchange}× ${listing.exchangeName}`,
+      title: `🏪 Boutique de ${shop.seller} — ${shop.trades.length} trade${shop.trades.length !== 1 ? 's' : ''}`,
       color: 0x5a9e2f,
-      thumbnail: { url: listing.itemImage },
-      fields: [
-        { name: '📦 Offre',    value: `**${listing.qtyOffer}× ${listing.itemName}**`,     inline: true },
-        { name: '🔄 Contre',   value: `**${listing.qtyExchange}× ${listing.exchangeName}**`, inline: true },
-        { name: '👤 Vendeur',  value: `\`${listing.seller}\``,                             inline: true },
-        ...(listing.description ? [{ name: '📝 Description', value: listing.description, inline: false }] : [])
-      ],
+      thumbnail: { url: shop.trades[0]?.itemImage || '' },
+      fields,
       footer: { text: 'CraftMarket • Minecraft Marketplace' },
-      timestamp: listing.date
+      timestamp: shop.date
     }]
   };
 
@@ -500,36 +650,13 @@ async function sendDiscordWebhook(webhookUrl, listing) {
       body: JSON.stringify(payload)
     });
     if (!res.ok) {
-      console.warn('Discord webhook failed:', res.status);
       showToast('⚠ Discord webhook : erreur ' + res.status, true);
     } else {
-      showToast('📣 Message envoyé sur Discord !');
+      showToast('📣 Boutique envoyée sur Discord !');
     }
   } catch (err) {
-    console.error('Discord webhook error:', err);
     showToast("⚠ Impossible d'envoyer sur Discord.", true);
   }
-}
-
-// ───────────────────────────────────────────
-// RESET FORM
-// ───────────────────────────────────────────
-function resetForm() {
-  selectedItem = null;
-  selectedExchange = null;
-  selectedItemId.value = '';
-  selectedExchangeId.value = '';
-  itemSearchEl.value = '';
-  exchangeSearchEl.value = '';
-  qtyOfferInput.value = '1';
-  qtyExchangeInput.value = '1';
-  sellerInput.value = '';
-  descInput.value = '';
-  selectedPreview.classList.add('hidden');
-  selectedExchangePreview.classList.add('hidden');
-  itemDropdown.classList.add('hidden');
-  exchangeDropdown.classList.add('hidden');
-  clearError();
 }
 
 // ───────────────────────────────────────────

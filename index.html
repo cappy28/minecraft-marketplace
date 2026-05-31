@@ -25,7 +25,7 @@
         <span class="discord-badge">
           <span class="discord-dot"></span> Discord connecté
         </span>
-        <button class="btn-primary" id="open-modal-btn">⚒ Vendre un item</button>
+        <button class="btn-primary" id="open-modal-btn">🏪 Créer ma boutique</button>
       </nav>
     </div>
   </header>
@@ -35,7 +35,7 @@
     <div class="filter-inner">
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
-        <input type="text" id="search-input" placeholder="Rechercher un item..." class="search-input" />
+        <input type="text" id="search-input" placeholder="Rechercher un item, vendeur..." class="search-input" />
       </div>
       <div class="filter-tabs" id="filter-tabs">
         <button class="tab-btn active" data-cat="all">Tous</button>
@@ -59,83 +59,107 @@
     </div>
   </main>
 
-  <!-- MODAL: AJOUTER ANNONCE -->
+  <!-- MODAL: BOUTIQUE / ÉDITION -->
   <div id="modal-overlay" class="modal-overlay hidden">
-    <div class="modal">
+    <div class="modal modal-shop">
       <div class="modal-header">
-        <h2 class="modal-title">⚒ Nouvelle Annonce</h2>
+        <h2 class="modal-title" id="modal-title">🏪 Nouvelle Boutique</h2>
         <button class="modal-close" id="close-modal-btn">✕</button>
       </div>
       <div class="modal-body">
-        <form id="listing-form" novalidate>
 
-          <div class="form-group">
-            <label for="item-search">Item Minecraft <span class="req">*</span></label>
-            <div class="item-selector">
-              <input type="text" id="item-search" placeholder="Tapez pour chercher un item..." autocomplete="off" class="form-input" />
-              <div id="item-dropdown" class="item-dropdown hidden"></div>
-              <div id="selected-item-preview" class="selected-preview hidden">
-                <img id="preview-img" src="" alt="" />
-                <span id="preview-name"></span>
-                <button type="button" id="clear-item-btn" class="clear-btn">✕</button>
-              </div>
-              <input type="hidden" id="selected-item-id" name="item_id" />
-            </div>
+        <!-- Infos vendeur (section commune) -->
+        <div class="shop-seller-bar">
+          <div class="form-group" style="flex:1; margin-bottom:0">
+            <label for="seller-input">👤 Pseudo vendeur <span class="req">*</span></label>
+            <input type="text" id="seller-input" class="form-input" placeholder="ex: Notch42" maxlength="24" />
           </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="qty-offer-input">Quantité offerte <span class="req">*</span></label>
-              <input type="number" id="qty-offer-input" class="form-input" placeholder="ex: 1" min="1" max="2304" value="1" />
-            </div>
-            <div class="form-group">
-              <label for="seller-input">Pseudo vendeur <span class="req">*</span></label>
-              <input type="text" id="seller-input" class="form-input" placeholder="ex: Notch42" maxlength="24" />
-            </div>
+          <div class="form-group" style="flex:1; margin-bottom:0">
+            <label for="shop-desc-input">📝 Description boutique</label>
+            <input type="text" id="shop-desc-input" class="form-input" placeholder="ex: Spécialiste en ressources rares" maxlength="120" />
           </div>
+        </div>
 
-          <div class="form-group">
-            <label>Item demandé en échange <span class="req">*</span></label>
-            <div class="item-selector" id="exchange-selector">
-              <input type="text" id="exchange-search" placeholder="Tapez pour chercher un item..." autocomplete="off" class="form-input" />
-              <div id="exchange-dropdown" class="item-dropdown hidden"></div>
-              <div id="selected-exchange-preview" class="selected-preview hidden">
-                <img id="exchange-preview-img" src="" alt="" />
-                <span id="exchange-preview-name"></span>
-                <button type="button" id="clear-exchange-btn" class="clear-btn">✕</button>
-              </div>
-              <input type="hidden" id="selected-exchange-id" name="exchange_id" />
-            </div>
-          </div>
+        <!-- Liste des trades -->
+        <div class="trades-header">
+          <span class="trades-title">⚒ Trades de la boutique</span>
+          <span id="trades-count-badge" class="trades-count-badge">0 trade</span>
+        </div>
+        <div id="trades-list" class="trades-list"></div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="qty-exchange-input">Quantité demandée <span class="req">*</span></label>
-              <input type="number" id="qty-exchange-input" class="form-input" placeholder="ex: 32" min="1" max="2304" value="1" />
-            </div>
-            <div class="form-group"></div>
-          </div>
+        <!-- Bouton ajouter trade -->
+        <button type="button" class="btn-add-trade" id="add-trade-btn">＋ Ajouter un trade</button>
 
-          <div class="form-group">
-            <label for="desc-input">Description</label>
-            <textarea id="desc-input" class="form-input form-textarea" placeholder="Détails, enchantements, état..." rows="3" maxlength="300"></textarea>
-          </div>
+        <!-- Erreur globale -->
+        <div id="form-error" class="form-error hidden"></div>
 
-          <div class="discord-status">
-            <span class="discord-dot"></span>
-            <span>Notifications Discord activées — annonce publiée automatiquement sur votre serveur</span>
-          </div>
+        <div class="discord-status">
+          <span class="discord-dot"></span>
+          <span>Notifications Discord activées — boutique publiée automatiquement sur votre serveur</span>
+        </div>
 
-          <div id="form-error" class="form-error hidden"></div>
-
-          <div class="form-actions">
-            <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
-            <button type="submit" class="btn-primary" id="submit-btn">📢 Publier l'annonce</button>
-          </div>
-        </form>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="submit-btn">📢 Publier la boutique</button>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- TEMPLATE: un bloc trade (cloné en JS) -->
+  <template id="trade-row-template">
+    <div class="trade-row" data-trade-index="">
+      <div class="trade-row-header">
+        <span class="trade-row-label">Trade #<span class="trade-num">1</span></span>
+        <button type="button" class="trade-row-remove" title="Supprimer ce trade">✕</button>
+      </div>
+      <div class="trade-row-body">
+        <!-- OFFERT -->
+        <div class="trade-col">
+          <label class="trade-col-label">📦 Item offert</label>
+          <div class="item-selector">
+            <input type="text" class="form-input item-search-offer" placeholder="Chercher un item..." autocomplete="off" />
+            <div class="item-dropdown item-dropdown-offer hidden"></div>
+            <div class="selected-preview offer-preview hidden">
+              <img class="offer-preview-img" src="" alt="" />
+              <span class="offer-preview-name"></span>
+              <button type="button" class="clear-btn clear-offer">✕</button>
+            </div>
+          </div>
+          <div class="qty-row">
+            <label>Quantité</label>
+            <input type="number" class="form-input qty-offer" placeholder="1" min="1" max="2304" value="1" />
+          </div>
+        </div>
+
+        <div class="trade-arrow-center">⇄</div>
+
+        <!-- ÉCHANGE -->
+        <div class="trade-col">
+          <label class="trade-col-label">🔄 Item demandé</label>
+          <div class="item-selector">
+            <input type="text" class="form-input item-search-exchange" placeholder="Chercher un item..." autocomplete="off" />
+            <div class="item-dropdown item-dropdown-exchange hidden"></div>
+            <div class="selected-preview exchange-preview hidden">
+              <img class="exchange-preview-img" src="" alt="" />
+              <span class="exchange-preview-name"></span>
+              <button type="button" class="clear-btn clear-exchange">✕</button>
+            </div>
+          </div>
+          <div class="qty-row">
+            <label>Quantité</label>
+            <input type="number" class="form-input qty-exchange" placeholder="1" min="1" max="2304" value="1" />
+          </div>
+        </div>
+
+        <!-- NOTE DU TRADE -->
+        <div class="trade-note-col">
+          <label class="trade-col-label">💬 Note (optionnel)</label>
+          <input type="text" class="form-input trade-note" placeholder="ex: Mending + Unbreaking III" maxlength="120" />
+        </div>
+      </div>
+    </div>
+  </template>
 
   <!-- TOAST -->
   <div id="toast" class="toast hidden"></div>
