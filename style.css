@@ -1245,3 +1245,263 @@ label {
   text-overflow: ellipsis;
   font-style: italic;
 }
+
+/* ===========================
+   v3 — Custom item + Enchantements
+   =========================== */
+
+/* ── Bouton custom dans dropdown ── */
+.dropdown-custom-row {
+  border-top: 1px solid var(--border);
+  padding: 6px 10px;
+}
+.dropdown-custom-btn {
+  background: none;
+  border: 1px dashed var(--border-bright);
+  color: var(--gold);
+  font-size: 13px;
+  padding: 5px 12px;
+  width: 100%;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  transition: all 0.15s;
+  text-align: left;
+}
+.dropdown-custom-btn:hover {
+  background: rgba(245,197,66,0.08);
+  border-color: var(--gold);
+}
+
+/* ── Modal item custom ── */
+.modal-custom-item {
+  max-width: 440px !important;
+}
+.custom-item-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  border-left: 3px solid var(--gold);
+  padding-left: 10px;
+}
+.custom-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border-bright);
+  margin-bottom: 12px;
+}
+.custom-preview-img {
+  width: 48px;
+  height: 48px;
+  image-rendering: pixelated;
+  border: 1px solid var(--border);
+  background: #0e110b;
+}
+.custom-preview-name {
+  font-size: 18px;
+  color: var(--text-primary);
+  font-family: 'VT323', monospace;
+}
+
+/* ── Badge custom sur les cartes ── */
+.custom-badge {
+  font-size: 10px;
+  background: rgba(245,197,66,0.15);
+  border: 1px solid rgba(245,197,66,0.4);
+  color: var(--gold);
+  padding: 1px 5px;
+  font-family: 'Press Start 2P', monospace;
+  vertical-align: middle;
+}
+
+/* ── Enchant button dans trade-col ── */
+.enchant-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.btn-enchant {
+  background: rgba(90,40,120,0.15);
+  border: 1px solid rgba(160,80,220,0.3);
+  color: #b080e0;
+  font-size: 12px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 0.3px;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn-enchant:hover {
+  background: rgba(90,40,120,0.35);
+  border-color: #b080e0;
+  color: #d4b0ff;
+}
+.enchant-count-badge {
+  background: #7040c0;
+  color: #fff;
+  font-size: 10px;
+  border-radius: 0;
+  padding: 1px 5px;
+  font-family: 'VT323', monospace;
+}
+.enchant-tags-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.enchant-tag-inline {
+  font-size: 12px;
+  background: rgba(90,40,120,0.2);
+  border: 1px solid rgba(160,80,220,0.3);
+  color: #c090f0;
+  padding: 2px 6px;
+  font-family: 'VT323', monospace;
+}
+.enchant-tag-inline.enchant-tag-curse {
+  background: rgba(120,20,60,0.2);
+  border-color: rgba(200,60,100,0.4);
+  color: #e07090;
+}
+
+/* ── Modal enchantements ── */
+.modal-enchant {
+  max-width: 560px !important;
+}
+.enchant-search-row {
+  margin-bottom: 14px;
+}
+.enchant-list {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 2px solid var(--border);
+  background: #0a0d07;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 16px;
+}
+.enchant-list::-webkit-scrollbar { width: 6px; }
+.enchant-list::-webkit-scrollbar-track { background: #0a0d07; }
+.enchant-list::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+.enchant-group-header {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 7px;
+  padding: 8px 8px 4px;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  margin-top: 4px;
+}
+.enchant-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  transition: background 0.12s;
+  cursor: default;
+  border: 1px solid transparent;
+}
+.enchant-item-row:hover { background: rgba(255,255,255,0.03); }
+.enchant-item-row.enchant-selected {
+  background: rgba(90,40,120,0.15);
+  border-color: rgba(160,80,220,0.25);
+}
+.enchant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.enchant-name {
+  font-size: 16px;
+  color: var(--text-primary);
+  font-family: 'VT323', monospace;
+}
+.enchant-name-en {
+  font-size: 12px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+/* Toggle checkbox */
+.enchant-toggle { cursor: pointer; position: relative; }
+.enchant-toggle input { display: none; }
+.enchant-toggle span {
+  display: block;
+  width: 36px; height: 20px;
+  background: var(--border);
+  border: 2px solid var(--border-bright);
+  position: relative;
+  transition: background 0.15s;
+}
+.enchant-toggle span::after {
+  content:'';
+  position:absolute;
+  top:2px; left:2px;
+  width:12px; height:12px;
+  background: var(--text-dim);
+  transition: transform 0.15s, background 0.15s;
+}
+.enchant-toggle input:checked + span { background: rgba(90,40,120,0.5); border-color: #b080e0; }
+.enchant-toggle input:checked + span::after { transform:translateX(16px); background:#d4b0ff; }
+
+/* Level buttons */
+.enchant-levels {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.enchant-lvl-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 14px;
+  width: 26px; height: 26px;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  transition: all 0.12s;
+  display: flex; align-items: center; justify-content: center;
+}
+.enchant-lvl-btn:hover { border-color: #b080e0; color: #d4b0ff; }
+.enchant-lvl-btn.active {
+  background: rgba(90,40,120,0.5);
+  border-color: #b080e0;
+  color: #fff;
+}
+
+/* ── Tags enchant sur les cartes catalogue ── */
+.trade-side-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.enchant-tags-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.enchant-tag-card {
+  font-size: 11px;
+  background: rgba(90,40,120,0.18);
+  border: 1px solid rgba(160,80,220,0.28);
+  color: #c090f0;
+  padding: 1px 5px;
+  font-family: 'VT323', monospace;
+}
+.enchant-tag-card.enchant-tag-curse {
+  background: rgba(120,20,60,0.18);
+  border-color: rgba(200,60,100,0.35);
+  color: #e07090;
+}

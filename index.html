@@ -68,7 +68,7 @@
       </div>
       <div class="modal-body">
 
-        <!-- Infos vendeur (section commune) -->
+        <!-- Infos vendeur -->
         <div class="shop-seller-bar">
           <div class="form-group" style="flex:1; margin-bottom:0">
             <label for="seller-input">👤 Pseudo vendeur <span class="req">*</span></label>
@@ -87,10 +87,8 @@
         </div>
         <div id="trades-list" class="trades-list"></div>
 
-        <!-- Bouton ajouter trade -->
         <button type="button" class="btn-add-trade" id="add-trade-btn">＋ Ajouter un trade</button>
 
-        <!-- Erreur globale -->
         <div id="form-error" class="form-error hidden"></div>
 
         <div class="discord-status">
@@ -106,7 +104,70 @@
     </div>
   </div>
 
-  <!-- TEMPLATE: un bloc trade (cloné en JS) -->
+  <!-- MODAL ITEM CUSTOM -->
+  <div id="custom-item-overlay" class="modal-overlay hidden" style="z-index:600">
+    <div class="modal modal-custom-item">
+      <div class="modal-header">
+        <h2 class="modal-title">✏ Item personnalisé</h2>
+        <button class="modal-close" id="close-custom-item-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="custom-item-hint">Item custom (datapack, plugin, etc.) introuvable dans la liste standard.</p>
+        <div class="form-group">
+          <label>Nom de l'item <span class="req">*</span></label>
+          <input type="text" id="custom-item-name" class="form-input" placeholder="ex: Épée du Dragon" maxlength="60" />
+        </div>
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="custom-item-cat" class="form-input">
+            <option value="misc">✨ Divers</option>
+            <option value="weapons">⚔ Armes</option>
+            <option value="tools">⛏ Outils</option>
+            <option value="armor">🛡 Armure</option>
+            <option value="resources">💎 Ressources</option>
+            <option value="blocks">🧱 Blocs</option>
+            <option value="food">🍎 Nourriture</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>URL image (optionnel)</label>
+          <input type="text" id="custom-item-img" class="form-input" placeholder="https://..." />
+        </div>
+        <div id="custom-item-preview-row" class="custom-preview-row hidden">
+          <img id="custom-item-preview-img" src="" alt="" class="custom-preview-img" />
+          <span id="custom-item-preview-name" class="custom-preview-name"></span>
+        </div>
+        <div id="custom-item-error" class="form-error hidden"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-custom-item-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="confirm-custom-item-btn">✅ Utiliser cet item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ENCHANTEMENTS -->
+  <div id="enchant-overlay" class="modal-overlay hidden" style="z-index:600">
+    <div class="modal modal-enchant">
+      <div class="modal-header">
+        <h2 class="modal-title">✨ Enchantements</h2>
+        <button class="modal-close" id="close-enchant-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="custom-item-hint">Sélectionne les enchantements à attacher à cet item.</p>
+        <div class="enchant-search-row">
+          <input type="text" id="enchant-search" class="form-input" placeholder="Filtrer les enchantements..." />
+        </div>
+        <div id="enchant-list" class="enchant-list"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-enchant-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="confirm-enchant-btn">✅ Valider les enchantements</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATE: un bloc trade -->
   <template id="trade-row-template">
     <div class="trade-row" data-trade-index="">
       <div class="trade-row-header">
@@ -114,6 +175,7 @@
         <button type="button" class="trade-row-remove" title="Supprimer ce trade">✕</button>
       </div>
       <div class="trade-row-body">
+
         <!-- OFFERT -->
         <div class="trade-col">
           <label class="trade-col-label">📦 Item offert</label>
@@ -129,6 +191,10 @@
           <div class="qty-row">
             <label>Quantité</label>
             <input type="number" class="form-input qty-offer" placeholder="1" min="1" max="2304" value="1" />
+          </div>
+          <div class="enchant-row">
+            <button type="button" class="btn-enchant offer-enchant-btn">✨ Enchantements <span class="enchant-count-badge offer-enchant-count hidden">0</span></button>
+            <div class="enchant-tags-inline offer-enchant-tags"></div>
           </div>
         </div>
 
@@ -150,18 +216,21 @@
             <label>Quantité</label>
             <input type="number" class="form-input qty-exchange" placeholder="1" min="1" max="2304" value="1" />
           </div>
+          <div class="enchant-row">
+            <button type="button" class="btn-enchant exchange-enchant-btn">✨ Enchantements <span class="enchant-count-badge exchange-enchant-count hidden">0</span></button>
+            <div class="enchant-tags-inline exchange-enchant-tags"></div>
+          </div>
         </div>
 
-        <!-- NOTE DU TRADE -->
+        <!-- NOTE -->
         <div class="trade-note-col">
           <label class="trade-col-label">💬 Note (optionnel)</label>
-          <input type="text" class="form-input trade-note" placeholder="ex: Mending + Unbreaking III" maxlength="120" />
+          <input type="text" class="form-input trade-note" placeholder="ex: Farm à villageois, lot de 64" maxlength="120" />
         </div>
       </div>
     </div>
   </template>
 
-  <!-- TOAST -->
   <div id="toast" class="toast hidden"></div>
 
   <footer class="site-footer">
