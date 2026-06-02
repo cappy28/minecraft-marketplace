@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CraftMarket — Minecraft Marketplace</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="logo">
+        <img src="https://minecraft.wiki/images/Grass_Block_JE7_BE6.png" alt="Grass Block" class="logo-icon" onerror="this.style.display='none'" />
+        <div>
+          <span class="logo-title">CraftMarket</span>
+          <span class="logo-sub">Minecraft Marketplace</span>
+        </div>
+      </div>
+      <nav class="header-nav">
+        <span id="listing-count" class="badge">0 annonces</span>
+        <span class="discord-badge">
+          <span class="discord-dot"></span> Discord connecté
+        </span>
+        <button class="btn-primary" id="open-modal-btn">＋ Créer ma boutique</button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- SEARCH & FILTERS -->
+  <section class="filter-bar">
+    <div class="filter-inner">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Rechercher un item, vendeur…" class="search-input" />
+      </div>
+      <div class="filter-tabs" id="filter-tabs">
+        <button class="tab-btn active" data-cat="all">Tous</button>
+        <button class="tab-btn" data-cat="weapons">⚔ Armes</button>
+        <button class="tab-btn" data-cat="tools">⛏ Outils</button>
+        <button class="tab-btn" data-cat="armor">🛡 Armure</button>
+        <button class="tab-btn" data-cat="resources">💎 Ressources</button>
+        <button class="tab-btn" data-cat="blocks">🧱 Blocs</button>
+        <button class="tab-btn" data-cat="food">🍎 Nourriture</button>
+        <button class="tab-btn" data-cat="misc">✨ Divers</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATALOGUE GRID -->
+  <main class="catalogue-section">
+    <div id="catalogue-grid" class="catalogue-grid"></div>
+    <div id="empty-state" class="empty-state" style="display:none">
+      <p>🪣 Aucune annonce trouvée.</p>
+      <p class="empty-sub">Soyez le premier à vendre quelque chose !</p>
+    </div>
+  </main>
+
+  <!-- MODAL: BOUTIQUE / ÉDITION -->
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal modal-shop">
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title">Nouvelle Boutique</h2>
+        <button class="modal-close" id="close-modal-btn">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Infos vendeur -->
+        <div class="shop-seller-bar">
+          <div class="form-group" style="flex:1; margin-bottom:0">
+            <label for="seller-input">Pseudo vendeur <span class="req">*</span></label>
+            <input type="text" id="seller-input" class="form-input" placeholder="ex: Notch42" maxlength="24" />
+          </div>
+          <div class="form-group" style="flex:1; margin-bottom:0">
+            <label for="shop-desc-input">Description boutique</label>
+            <input type="text" id="shop-desc-input" class="form-input" placeholder="ex: Spécialiste en ressources rares" maxlength="120" />
+          </div>
+        </div>
+
+        <!-- Liste des trades -->
+        <div class="trades-header">
+          <span class="trades-title">⚒ Trades</span>
+          <span id="trades-count-badge" class="trades-count-badge">0 trade</span>
+        </div>
+        <div id="trades-list" class="trades-list"></div>
+
+        <button type="button" class="btn-add-trade" id="add-trade-btn">＋ Ajouter un trade</button>
+
+        <div id="form-error" class="form-error hidden"></div>
+
+        <div class="discord-status">
+          <span class="discord-dot"></span>
+          <span>Notifications Discord activées — boutique publiée automatiquement sur votre serveur</span>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="submit-btn">Publier la boutique</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ITEM CUSTOM -->
+  <div id="custom-item-overlay" class="modal-overlay hidden" style="z-index:600">
+    <div class="modal modal-custom-item">
+      <div class="modal-header">
+        <h2 class="modal-title">Item personnalisé</h2>
+        <button class="modal-close" id="close-custom-item-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="custom-item-hint">Item custom (datapack, plugin, etc.) introuvable dans la liste standard.</p>
+        <div class="form-group">
+          <label>Nom de l'item <span class="req">*</span></label>
+          <input type="text" id="custom-item-name" class="form-input" placeholder="ex: Épée du Dragon" maxlength="60" />
+        </div>
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="custom-item-cat" class="form-input">
+            <option value="misc">✨ Divers</option>
+            <option value="weapons">⚔ Armes</option>
+            <option value="tools">⛏ Outils</option>
+            <option value="armor">🛡 Armure</option>
+            <option value="resources">💎 Ressources</option>
+            <option value="blocks">🧱 Blocs</option>
+            <option value="food">🍎 Nourriture</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>URL image (optionnel)</label>
+          <input type="text" id="custom-item-img" class="form-input" placeholder="https://…" />
+        </div>
+        <div id="custom-item-preview-row" class="custom-preview-row hidden">
+          <img id="custom-item-preview-img" src="" alt="" class="custom-preview-img" />
+          <span id="custom-item-preview-name" class="custom-preview-name"></span>
+        </div>
+        <div id="custom-item-error" class="form-error hidden"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-custom-item-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="confirm-custom-item-btn">Utiliser cet item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ENCHANTEMENTS -->
+  <div id="enchant-overlay" class="modal-overlay hidden" style="z-index:600">
+    <div class="modal modal-enchant">
+      <div class="modal-header">
+        <h2 class="modal-title">✨ Enchantements</h2>
+        <button class="modal-close" id="close-enchant-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="custom-item-hint">Sélectionne les enchantements à attacher à cet item.</p>
+        <div class="enchant-search-row">
+          <input type="text" id="enchant-search" class="form-input" placeholder="Filtrer les enchantements…" />
+        </div>
+        <div id="enchant-list" class="enchant-list"></div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" id="cancel-enchant-btn">Annuler</button>
+          <button type="button" class="btn-primary" id="confirm-enchant-btn">Valider les enchantements</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEMPLATE: un bloc trade (colonnes offert / échange) -->
+  <!-- Les items multiples sont injectés dynamiquement via JS -->
+  <template id="trade-row-template">
+    <div class="trade-row" data-trade-index="">
+      <div class="trade-row-header">
+        <span class="trade-row-label">Trade <span class="trade-num">1</span></span>
+        <button type="button" class="trade-row-remove" title="Supprimer ce trade">✕</button>
+      </div>
+      <div class="trade-row-body">
+
+        <!-- OFFERT (colonne gauche) -->
+        <div class="trade-col" data-side="offer">
+          <label class="trade-col-label">📦 Items offerts</label>
+          <div class="items-slots offer-slots"></div>
+          <button type="button" class="btn-add-item-slot offer-add-slot-btn">＋ Ajouter un item offert</button>
+          <div class="enchant-row" style="margin-top:6px">
+            <button type="button" class="btn-enchant offer-enchant-btn">✨ Enchantements <span class="enchant-count-badge offer-enchant-count hidden">0</span></button>
+            <div class="enchant-tags-inline offer-enchant-tags"></div>
+          </div>
+        </div>
+
+        <div class="trade-arrow-center">⇄</div>
+
+        <!-- ÉCHANGE (colonne droite) -->
+        <div class="trade-col" data-side="exchange">
+          <label class="trade-col-label">🔄 Items demandés</label>
+          <div class="items-slots exchange-slots"></div>
+          <button type="button" class="btn-add-item-slot exchange-add-slot-btn">＋ Ajouter un item demandé</button>
+          <div class="enchant-row" style="margin-top:6px">
+            <button type="button" class="btn-enchant exchange-enchant-btn">✨ Enchantements <span class="enchant-count-badge exchange-enchant-count hidden">0</span></button>
+            <div class="enchant-tags-inline exchange-enchant-tags"></div>
+          </div>
+        </div>
+
+        <!-- NOTE -->
+        <div class="trade-note-col">
+          <label class="trade-col-label">💬 Note (optionnel)</label>
+          <input type="text" class="form-input trade-note" placeholder="ex: Farm à villageois, lot de 64" maxlength="120" />
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <!-- TEMPLATE: un slot item -->
+  <template id="item-slot-template">
+    <div class="item-slot" data-slot-index="">
+      <div class="item-slot-header">
+        <span class="item-slot-num">Item 1</span>
+        <button type="button" class="item-slot-remove" title="Retirer ce slot">✕</button>
+      </div>
+      <div class="item-selector">
+        <input type="text" class="form-input item-search" placeholder="Chercher un item…" autocomplete="off" />
+        <div class="item-dropdown hidden"></div>
+        <div class="selected-preview hidden">
+          <img class="preview-img" src="" alt="" />
+          <span class="preview-name"></span>
+          <button type="button" class="clear-btn">✕</button>
+        </div>
+      </div>
+      <div class="qty-row">
+        <label>Qté</label>
+        <input type="number" class="form-input qty-input" placeholder="1" min="1" max="2304" value="1" />
+      </div>
+    </div>
+  </template>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <footer class="site-footer">
+    <p>CraftMarket — Fait avec ❤ pour la communauté Minecraft</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
